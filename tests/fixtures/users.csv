@@ -1,0 +1,4 @@
+user_id,user_name,user_age,user_country,created_at
+1,Ada Lovelace,36,United Kingdom,2024-01-01
+2,Grace Hopper,85,United States,2024-01-02
+3,Katherine Johnson,101,United States,2024-01-03

@@ -1,0 +1,4 @@
+track_id,artists,album_name,track_name,duration_ms,track_genre
+t1,Artist One,Album One,Song One,200000,acoustic
+t2,Artist Two,Album Two,Song Two,180000,pop
+t3,Artist Three,Album Three,Song Three,240000,acoustic
