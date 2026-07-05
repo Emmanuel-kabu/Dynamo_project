@@ -11,6 +11,11 @@ Do not place AWS access keys in Terraform variables, code, or committed files. U
 
 ## Configure Terraform
 
+Optional examples:
+
+- Copy `infra/envs/dev/terraform.tfvars.example` to `terraform.tfvars` and adjust values.
+- Copy `infra/envs/dev/backend.tf.example` to `backend.tf` only after creating a remote state bucket and lock table.
+
 ```powershell
 cd infra/envs/dev
 terraform init
@@ -31,6 +36,14 @@ Important variables:
 ## Package And Upload Glue Assets
 
 Terraform uploads the Glue scripts from `src/glue/jobs` and `src/glue/lib` to the artifact S3 bucket. If you change scripts after deployment, rerun `terraform apply`.
+
+## CI Checks
+
+GitHub Actions runs:
+
+- `ruff check .`
+- `pytest`
+- `terraform fmt -check -recursive infra`
 
 ## Upload Source Data
 

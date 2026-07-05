@@ -1,0 +1,5 @@
+aws_account_id    = "831926601640"
+aws_region        = "us-east-1"
+project_name      = "dynamo-music-streaming"
+environment       = "dev"
+late_arrival_days = 1095
