@@ -12,15 +12,13 @@ import io
 import json
 import re
 import sys
+from collections.abc import Iterable
 from datetime import datetime, timezone
-from typing import Iterable
 
 import boto3
 from awsglue.utils import getResolvedOptions
-
 from music_etl.dynamodb import remove_nulls, to_dynamodb_value
 from music_etl.s3_paths import normalise_event_key
-
 
 ARGS = [
     "bucket",

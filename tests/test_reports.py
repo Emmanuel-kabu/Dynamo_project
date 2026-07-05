@@ -1,5 +1,4 @@
 import pytest
-
 from music_etl.reports import CheckResult, build_validation_report, count_check, pass_check
 
 

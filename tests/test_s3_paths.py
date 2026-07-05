@@ -1,5 +1,4 @@
 import pytest
-
 from music_etl.s3_paths import normalise_event_key, parent_prefix, parse_s3_uri, s3_uri
 
 

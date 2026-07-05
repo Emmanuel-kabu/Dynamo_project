@@ -10,19 +10,17 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Iterable
 from functools import reduce
 from operator import or_
-from typing import Iterable
 
 import boto3
 from awsglue.utils import getResolvedOptions
-from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql import functions as F
-
 from music_etl.constants import REQUIRED_COLUMNS
 from music_etl.reports import CheckResult, build_validation_report, count_check, pass_check
 from music_etl.s3_paths import build_execution_id, normalise_event_key, s3_uri
-
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
 
 ARGS = [
     "bucket",
@@ -246,7 +244,9 @@ def stream_date_from_key(stream_key: str) -> str | None:
     return "-".join(match.groups())
 
 
-def timeliness_checks(stream_key: str, streams: DataFrame, late_arrival_days: int) -> list[CheckResult]:
+def timeliness_checks(
+    stream_key: str, streams: DataFrame, late_arrival_days: int
+) -> list[CheckResult]:
     checks: list[CheckResult] = []
     if "listen_ts" not in streams.columns:
         return checks
@@ -390,7 +390,9 @@ def main() -> None:
     failed = [check for check in checks if check.status == "FAIL"]
     if failed:
         failed_names = ", ".join(check.name for check in failed)
-        raise RuntimeError(f"Validation failed; report=s3://{bucket}/{report_key}; checks={failed_names}")
+        raise RuntimeError(
+            f"Validation failed; report=s3://{bucket}/{report_key}; checks={failed_names}"
+        )
 
     print(f"Validation passed; report=s3://{bucket}/{report_key}")
 

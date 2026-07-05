@@ -9,12 +9,10 @@ from datetime import datetime, timezone
 
 import boto3
 from awsglue.utils import getResolvedOptions
-from pyspark.sql import DataFrame, SparkSession, Window
-from pyspark.sql import functions as F
-
 from music_etl import DATA_PRODUCT_VERSION
 from music_etl.s3_paths import normalise_event_key, parent_prefix, s3_uri
-
+from pyspark.sql import DataFrame, SparkSession, Window
+from pyspark.sql import functions as F
 
 ARGS = [
     "bucket",
@@ -96,7 +94,9 @@ def with_metadata(df: DataFrame, execution_id: str, generated_at: str) -> DataFr
     )
 
 
-def compute_daily_genre_kpis(enriched: DataFrame, execution_id: str, generated_at: str) -> DataFrame:
+def compute_daily_genre_kpis(
+    enriched: DataFrame, execution_id: str, generated_at: str
+) -> DataFrame:
     metrics = (
         enriched.groupBy(F.col("metric_date"), F.col("track_genre").alias("genre"))
         .agg(
@@ -114,7 +114,13 @@ def compute_daily_genre_kpis(enriched: DataFrame, execution_id: str, generated_a
 
 def compute_top_songs(enriched: DataFrame, execution_id: str, generated_at: str) -> DataFrame:
     song_counts = (
-        enriched.groupBy("metric_date", F.col("track_genre").alias("genre"), "track_id", "track_name", "artists")
+        enriched.groupBy(
+            "metric_date",
+            F.col("track_genre").alias("genre"),
+            "track_id",
+            "track_name",
+            "artists",
+        )
         .agg(F.count(F.lit(1)).cast("long").alias("listen_count"))
     )
     window = Window.partitionBy("metric_date", "genre").orderBy(
@@ -207,7 +213,9 @@ def main() -> None:
         "daily_genre_top_songs": write_product(
             daily_genre_top_songs, bucket, output_prefix, "daily_genre_top_songs"
         ),
-        "daily_top_genres": write_product(daily_top_genres, bucket, output_prefix, "daily_top_genres"),
+        "daily_top_genres": write_product(
+            daily_top_genres, bucket, output_prefix, "daily_top_genres"
+        ),
     }
 
     summary_key = write_summary(
