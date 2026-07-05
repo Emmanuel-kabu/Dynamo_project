@@ -25,5 +25,5 @@ variable "environment" {
 variable "late_arrival_days" {
   description = "Maximum accepted age for stream events before they are quarantined."
   type        = number
-  default     = 30
+  default     = 1095
 }

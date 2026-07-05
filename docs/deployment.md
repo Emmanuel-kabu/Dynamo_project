@@ -26,7 +26,7 @@ Important variables:
 | `aws_region` | Target region. Defaults to `us-east-1`. |
 | `project_name` | Resource naming prefix. |
 | `environment` | Environment suffix such as `dev`. |
-| `late_arrival_days` | Maximum accepted stream event age. |
+| `late_arrival_days` | Maximum accepted stream event age. Defaults to `1095` so the provided historical sample data can run; use a tighter value such as `30` in production. |
 
 ## Package And Upload Glue Assets
 
