@@ -27,3 +27,18 @@ output "step_functions_role_arn" {
   description = "Step Functions execution role ARN."
   value       = module.iam.step_functions_role_arn
 }
+
+output "glue_job_names" {
+  description = "Glue job names keyed by logical job."
+  value       = module.glue.job_names
+}
+
+output "state_machine_arn" {
+  description = "Pipeline state machine ARN."
+  value       = module.step_functions.state_machine_arn
+}
+
+output "eventbridge_rule_name" {
+  description = "EventBridge S3 trigger rule name."
+  value       = module.eventbridge.rule_name
+}

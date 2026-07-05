@@ -1,0 +1,157 @@
+{
+  "Comment": "Music streaming S3 to Glue to DynamoDB pipeline",
+  "StartAt": "ValidateBatch",
+  "States": {
+    "ValidateBatch": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${validate_job_name}",
+        "Arguments": {
+          "--bucket.$": "$.bucket",
+          "--stream_key.$": "$.key",
+          "--songs_key": "raw/songs/songs.csv",
+          "--users_key": "raw/users/users.csv",
+          "--report_prefix": "validation/reports",
+          "--late_arrival_days": "${late_arrival_days}",
+          "--execution_id.$": "$$.Execution.Name"
+        }
+      },
+      "ResultPath": "$.validation_result",
+      "Next": "ComputeDailyKpis",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.failure",
+          "Next": "QuarantineSource"
+        }
+      ]
+    },
+    "ComputeDailyKpis": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${compute_job_name}",
+        "Arguments": {
+          "--bucket.$": "$.bucket",
+          "--stream_key.$": "$.key",
+          "--songs_key": "raw/songs/songs.csv",
+          "--output_prefix": "curated",
+          "--execution_id.$": "$$.Execution.Name"
+        }
+      },
+      "ResultPath": "$.compute_result",
+      "Next": "PublishToDynamoDb",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.failure",
+          "Next": "QuarantineSource"
+        }
+      ]
+    },
+    "PublishToDynamoDb": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${publish_job_name}",
+        "Arguments": {
+          "--bucket.$": "$.bucket",
+          "--stream_key.$": "$.key",
+          "--output_prefix": "curated",
+          "--execution_id.$": "$$.Execution.Name",
+          "--daily_genre_kpis_table": "${daily_genre_kpis_table}",
+          "--daily_genre_top_songs_table": "${daily_genre_top_songs_table}",
+          "--daily_top_genres_table": "${daily_top_genres_table}",
+          "--pipeline_audit_table": "${pipeline_audit_table}"
+        }
+      },
+      "ResultPath": "$.publish_result",
+      "Next": "ArchiveSource",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.failure",
+          "Next": "QuarantineSource"
+        }
+      ]
+    },
+    "ArchiveSource": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:copyObject",
+      "Parameters": {
+        "Bucket.$": "$.bucket",
+        "CopySource.$": "States.Format('{}/{}', $.bucket, $.key)",
+        "Key.$": "States.Format('archive/{}', $.key)"
+      },
+      "ResultPath": "$.archive_result",
+      "Next": "DeleteRawSource",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.failure",
+          "Next": "SendDlqMessage"
+        }
+      ]
+    },
+    "DeleteRawSource": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:deleteObject",
+      "Parameters": {
+        "Bucket.$": "$.bucket",
+        "Key.$": "$.key"
+      },
+      "ResultPath": "$.delete_result",
+      "End": true,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.failure",
+          "Next": "SendDlqMessage"
+        }
+      ]
+    },
+    "QuarantineSource": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:copyObject",
+      "Parameters": {
+        "Bucket.$": "$.bucket",
+        "CopySource.$": "States.Format('{}/{}', $.bucket, $.key)",
+        "Key.$": "States.Format('dlq/{}/{}', $$.Execution.Name, $.key)"
+      },
+      "ResultPath": "$.quarantine_result",
+      "Next": "SendDlqMessage",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.quarantine_failure",
+          "Next": "SendDlqMessage"
+        }
+      ]
+    },
+    "SendDlqMessage": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${dlq_queue_url}",
+        "MessageBody.$": "States.JsonToString($)",
+        "MessageAttributes": {
+          "execution_arn": {
+            "DataType": "String",
+            "StringValue.$": "$$.Execution.Id"
+          },
+          "execution_name": {
+            "DataType": "String",
+            "StringValue.$": "$$.Execution.Name"
+          }
+        }
+      },
+      "Next": "FailPipeline"
+    },
+    "FailPipeline": {
+      "Type": "Fail",
+      "Error": "PipelineFailed",
+      "Cause": "The source file was routed to the DLQ workflow."
+    }
+  }
+}

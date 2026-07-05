@@ -1,4 +1,6 @@
 .terraform/
+.terraform-build/
+infra/modules/glue/*.zip
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl

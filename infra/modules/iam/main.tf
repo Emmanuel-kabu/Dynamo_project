@@ -104,9 +104,9 @@ resource "aws_iam_role_policy" "step_functions_pipeline_access" {
         Sid    = "S3ArchiveAndQuarantine"
         Effect = "Allow"
         Action = [
-          "s3:CopyObject",
           "s3:DeleteObject",
           "s3:GetObject",
+          "s3:GetObjectVersion",
           "s3:PutObject",
           "s3:ListBucket"
         ]
@@ -141,6 +141,29 @@ resource "aws_iam_role_policy" "step_functions_pipeline_access" {
           "logs:PutResourcePolicy",
           "logs:DescribeResourcePolicies",
           "logs:DescribeLogGroups"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "StepFunctionsSyncEventBridgeRule"
+        Effect = "Allow"
+        Action = [
+          "events:DeleteRule",
+          "events:DescribeRule",
+          "events:PutRule",
+          "events:PutTargets",
+          "events:RemoveTargets"
+        ]
+        Resource = "arn:aws:events:${var.aws_region}:${var.aws_account_id}:rule/StepFunctionsGetEventsForGlueJobRule"
+      },
+      {
+        Sid    = "StepFunctionsXRayTracing"
+        Effect = "Allow"
+        Action = [
+          "xray:GetSamplingRules",
+          "xray:GetSamplingTargets",
+          "xray:PutTelemetryRecords",
+          "xray:PutTraceSegments"
         ]
         Resource = "*"
       }
